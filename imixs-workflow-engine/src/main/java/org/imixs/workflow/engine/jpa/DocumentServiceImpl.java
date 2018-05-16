@@ -868,6 +868,7 @@ public class DocumentServiceImpl implements DocumentService {
 		return result;
 	}
 
+
 	/**
 	 * This method creates a backup of the result set form a Lucene search query.
 	 * The document list will be stored into the file system. The method stores the
@@ -882,7 +883,7 @@ public class DocumentServiceImpl implements DocumentService {
 		boolean hasMoreData = true;
 		int JUNK_SIZE = 100;
 		long totalcount = 0;
-		int startpos = 0;
+		int pageIndex = 0;
 		int icount = 0;
 
 		logger.info("backup - starting...");
@@ -899,12 +900,17 @@ public class DocumentServiceImpl implements DocumentService {
 		while (hasMoreData) {
 			// read a junk....
 
-			Collection<ItemCollection> col = find(query, JUNK_SIZE, startpos);
-
-			if (col.size() < JUNK_SIZE)
-				hasMoreData = false;
-			startpos = startpos + col.size();
+			Collection<ItemCollection> col = find(query, JUNK_SIZE, pageIndex);
 			totalcount = totalcount + col.size();
+			logger.info("backup - processing...... "+col.size() + " documents read....");
+
+			if (col.size() < JUNK_SIZE) {
+				hasMoreData = false;
+				logger.finest("......all data read.");
+			} else {
+				pageIndex++;
+				logger.finest("......next page...");
+			}
 
 			for (ItemCollection aworkitem : col) {
 				// get serialized data
@@ -913,10 +919,9 @@ public class DocumentServiceImpl implements DocumentService {
 				out.writeObject(hmap);
 				icount++;
 			}
-			logger.finest("......"+totalcount + " documents backuped....");
 		}
 		out.close();
-		logger.info("Backup finished - " + icount + " documents read totaly.");
+		logger.info("backup - finished: " + icount + " documents read totaly.");
 	}
 
 	/**
